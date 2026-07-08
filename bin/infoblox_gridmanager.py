@@ -3,10 +3,13 @@ import sys
 import json
 import dateutil.parser
 import requests
-from distutils.util import strtobool
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 from splunklib.modularinput import *
+
+
+def strtobool(value):
+    return str(value).strip().lower() in ("1", "true", "t", "yes", "y", "on")
 
 
 class Input(Script):
