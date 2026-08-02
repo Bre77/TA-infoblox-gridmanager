@@ -5,7 +5,7 @@ import dateutil.parser
 import requests
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
-from splunklib.modularinput import *
+from splunk_input_runtime.modularinput import Argument, Event, EventWriter, Scheme, Script
 
 
 def strtobool(value):
@@ -84,7 +84,6 @@ class Input(Script):
         return scheme
 
     def stream_events(self, inputs, ew):
-        self.service.namespace['app'] = self.APP
         # Get Variables
         input_name, input_items = inputs.inputs.popitem()
         kind, name = input_name.split("://")
@@ -97,23 +96,14 @@ class Input(Script):
         BASE = f"{PROTOCOL}://{DOMAIN}/wapi/{VERSION}"
 
         # Password Encryption
-        updates = {}
-        for item in ["password"]:
-            stored_password = [x for x in self.service.storage_passwords if x.username == item and x.realm == name]
-            if input_items[item] == self.MASK:
-                if len(stored_password) != 1:
-                    ew.log(EventWriter.ERROR,f"{name}: Encrypted {item} was not found, reconfigure its value.")
-                    return
-                input_items[item] = stored_password[0].content.clear_password
-            else:
-                if(stored_password):
-                    ew.log(EventWriter.DEBUG,"{input_name}: Removing Current password")
-                    self.service.storage_passwords.delete(username=item,realm=name)
-                ew.log(EventWriter.DEBUG,"{input_name}: Storing password and updating Input")
-                self.service.storage_passwords.create(input_items[item],item,name)
-                updates[item] = self.MASK
-        if(updates):
-            self.service.inputs.__getitem__((name,kind)).update(**updates)
+        secrets = self.context.credentials.protect_input_fields(
+            kind=kind,
+            stanza=name,
+            values=input_items,
+            fields=("password",),
+            placeholder=self.MASK,
+        )
+        input_items["password"] = secrets["password"]
 
         count = 0
         params = {
@@ -165,7 +155,6 @@ class Input(Script):
                     break
                 
                 params["_page_id"] = respdata["next_page_id"]
-        ew.close()
 
 if __name__ == '__main__':
     exitcode = Input().run(sys.argv)
