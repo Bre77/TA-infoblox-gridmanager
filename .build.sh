@@ -8,4 +8,4 @@ python3.9 -m pip install --upgrade -t lib -r lib/requirements.txt --no-dependenc
 rm -rf lib/*/__pycache__
 rm -rf lib/*/*/__pycache__
 cd ..
-tar -cpzf $OUTPUT --exclude=.* --exclude=package.json --overwrite TA-infoblox-gridmanager
+tar -cpzf $OUTPUT --exclude=.* --exclude=package.json --exclude=TA-infoblox-gridmanager/AGENTS.md --exclude=TA-infoblox-gridmanager/CLAUDE.md --overwrite TA-infoblox-gridmanager
